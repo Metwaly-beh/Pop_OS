@@ -1,8 +1,9 @@
+public class Main {
+    static Memory memory = new Memory();
+    static DiskManager disk = new DiskManager();
+    static SwapManager swapManager = new SwapManager(memory, disk);
+    static List<PCB> allProcesses = new ArrayList<>();
 
-void main() {
-    IO.println(String.format("Hello and welcome!"));
-
-    for (int i = 1; i <= 5; i++) {
-        IO.println("i = " + i);
-    }
+    public static void main(String[] args) {
+         }
 }
