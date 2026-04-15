@@ -1,3 +1,6 @@
+import java.util.ArrayList;
+import java.util.List;
+
 public class Main {
     static Memory memory = new Memory();
     static Disk disk = new Disk();
