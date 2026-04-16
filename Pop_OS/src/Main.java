@@ -9,12 +9,10 @@ public class Main {
     public static Semaphore userInputSem = new Semaphore("userInput");
 public static Semaphore userOutputSem = new Semaphore("userOutput");
 public static Semaphore fileSem = new Semaphore("file");
+public static GUI gui;
 
-    public static void main(String[] args) {
-        GUI gui = new GUI(this); 
-         }
 
-    public static Semaphore getSemaphore(String resourceName) {
+public static Semaphore getSemaphore(String resourceName) {
     switch (resourceName) {
         case "userInput": return userInputSem;
         case "userOutput": return userOutputSem;
@@ -22,5 +20,28 @@ public static Semaphore fileSem = new Semaphore("file");
         default: return null;
     }
 }
+
+public static void addToGlobalBlockedQueue(Process p) {
+    scheduler.addToBlockedQueue(p);
+}
+
+public static void addToReadyQueue(Process p) {
+    scheduler.addToReadyQueue(p);
+}
+
+public static String getBlockedQueuesString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("UserInput: ").append(userInputSem.getBlockedQueue()).append("\n");
+    sb.append("UserOutput: ").append(userOutputSem.getBlockedQueue()).append("\n");
+    sb.append("File: ").append(fileSem.getBlockedQueue()).append("\n");
+    sb.append("General: ").append(scheduler.getGeneralBlockedQueue());
+    return sb.toString();
+}
+    
+    public static void main(String[] args) {
+        gui = new GUI();
+         }
+
+
     
 }
