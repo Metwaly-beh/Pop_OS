@@ -22,11 +22,11 @@ public static Semaphore getSemaphore(String resourceName) {
 }
 
 public static void addToGlobalBlockedQueue(Process p) {
-    scheduler.addToBlockedQueue(p);
+    SchedulerChooser.getCurrentScheduler().addToBlockedQueue(p);
 }
 
 public static void addToReadyQueue(Process p) {
-    scheduler.addToReadyQueue(p);
+    SchedulerChooser.getCurrentScheduler().addToReadyQueue(p);
 }
 
 public static String getBlockedQueuesString() {
@@ -34,7 +34,7 @@ public static String getBlockedQueuesString() {
     sb.append("UserInput: ").append(userInputSem.getBlockedQueue()).append("\n");
     sb.append("UserOutput: ").append(userOutputSem.getBlockedQueue()).append("\n");
     sb.append("File: ").append(fileSem.getBlockedQueue()).append("\n");
-    sb.append("General: ").append(scheduler.getGeneralBlockedQueue());
+    sb.append("General: ").append(SchedulerChooser.getCurrentScheduler().getGeneralBlockedQueue());
     return sb.toString();
 }
     
