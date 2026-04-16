@@ -8,8 +8,11 @@ public class PCB {
     private int arrivalTime;
     private int burstTime;
     private int waitingTime;
+    private int mlfqLevel = 0;
+    private int lastReadyTime = 0;
+    private int totalInstructions;
 
-    public PCB(int processID, int arrivalTime, int burstTime) {
+    public PCB(int processID, int arrivalTime, int burstTime, int totalInstructions) {
         this.processID = processID;
         this.state = State.READY;
         this.programCounter = 0;
@@ -18,6 +21,8 @@ public class PCB {
         this.arrivalTime = arrivalTime;
         this.burstTime = burstTime;
         this.waitingTime = 0;
+        this.totalInstructions = totalInstructions;
+        this.lastReadyTime = arrivalTime;
     }
 
     public void syncFromMemory(Memory memory) {
@@ -35,6 +40,15 @@ public class PCB {
     public double getResponseRatio() {
         if (getBurstTime() == 0) return Double.MAX_VALUE;
         return (double)(getWaitingTime() + getBurstTime()) / getBurstTime();
+    }
+
+
+
+    public void accumulateWaiting(int currentTime) {
+        if (state == State.READY && currentTime > lastReadyTime) {
+            waitingTime += (currentTime - lastReadyTime);
+            lastReadyTime = currentTime;
+        }
     }
 
     public int getProcessID() {
@@ -101,7 +115,20 @@ public class PCB {
         this.waitingTime = waitingTime;
     }
 
-   @Override
+    public int getMlfqLevel() { return mlfqLevel; }
+
+    public void setMlfqLevel(int level) { this.mlfqLevel = level; }
+
+    public int getLastReadyTime() { return lastReadyTime; }
+
+    public void setLastReadyTime(int t) { this.lastReadyTime = t; }
+
+    public int getTotalInstructions() { return totalInstructions; }
+
+    public void setTotalInstructions(int n) { this.totalInstructions = n; }
+
+
+    @Override
 public String toString() {
     return "PCB[PID=" + getProcessID()
         + " | State=" + getState()

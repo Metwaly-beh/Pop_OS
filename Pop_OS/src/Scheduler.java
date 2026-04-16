@@ -12,7 +12,7 @@
 public interface Scheduler {
 
     /** Enqueue a process into the ready queue. */
-    void addProcess(ProcessControlBlock pcb, int currentTime);
+    void addProcess(PCB pcb, int currentTime);
 
     /**
      * Choose the next process to run.
@@ -20,7 +20,7 @@ public interface Scheduler {
      * @param currentTime current clock tick
      * @return the selected PCB, or null if the ready queue is empty
      */
-    ProcessControlBlock schedule(int currentTime);
+    PCB schedule(int currentTime);
 
     /**
      * Called every clock tick.
@@ -30,13 +30,13 @@ public interface Scheduler {
      * @param currentTime current clock tick
      * @return true if the current process should be preempted now
      */
-    boolean tick(ProcessControlBlock running, int currentTime);
+    boolean tick(PCB running, int currentTime);
 
     /** Called when the running process gets blocked on a resource. */
-    void onBlock(ProcessControlBlock pcb, int currentTime);
+    void onBlock(PCB pcb, int currentTime);
 
     /** Called when the running process has finished all its instructions. */
-    void onComplete(ProcessControlBlock pcb, int currentTime);
+    void onComplete(PCB pcb, int currentTime);
 
     /** Print ready queue (and any sub-queues) in human-readable form. */
     void printQueues();

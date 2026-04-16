@@ -12,7 +12,7 @@ import java.util.Queue;
  */
 public class RRScheduler implements Scheduler {
 
-    private final Queue<ProcessControlBlock> readyQueue;
+    private final Queue<PCB> readyQueue;
     private int quantum;               // instructions per time slice
     private int instructionsExecuted;  // instructions run in the current slice
 
@@ -30,8 +30,8 @@ public class RRScheduler implements Scheduler {
     // ── Scheduler interface ──────────────────────────────────────────────────
 
     @Override
-    public void addProcess(ProcessControlBlock pcb, int currentTime) {
-        pcb.setState(ProcessState.READY);
+    public void addProcess(PCB pcb, int currentTime) {
+        pcb.setState(State.READY);
         pcb.setLastReadyTime(currentTime);
         readyQueue.add(pcb);
         System.out.printf("[RR][t=%d] Process %d added to Ready Queue.%n",
@@ -39,12 +39,12 @@ public class RRScheduler implements Scheduler {
     }
 
     @Override
-    public ProcessControlBlock schedule(int currentTime) {
+    public PCB schedule(int currentTime) {
         if (readyQueue.isEmpty()) return null;
 
         instructionsExecuted = 0;     // reset slice counter for the new process
-        ProcessControlBlock chosen = readyQueue.poll();
-        chosen.setState(ProcessState.RUNNING);
+        PCB chosen = readyQueue.poll();
+        chosen.setState(State.RUNNING);
         System.out.printf("[RR][t=%d] Scheduled Process %d  (quantum=%d)%n",
                 currentTime, chosen.getProcessID(), quantum);
         printQueues();
@@ -58,7 +58,7 @@ public class RRScheduler implements Scheduler {
      *         preempted (put back at the end of the ready queue).
      */
     @Override
-    public boolean tick(ProcessControlBlock running, int currentTime) {
+    public boolean tick(PCB running, int currentTime) {
         if (running == null) return false;
 
         instructionsExecuted++;
@@ -74,8 +74,8 @@ public class RRScheduler implements Scheduler {
     }
 
     @Override
-    public void onBlock(ProcessControlBlock pcb, int currentTime) {
-        pcb.setState(ProcessState.BLOCKED);
+    public void onBlock(PCB pcb, int currentTime) {
+        pcb.setState(State.BLOCKED);
         instructionsExecuted = 0;
         System.out.printf("[RR][t=%d] Process %d BLOCKED.%n",
                 currentTime, pcb.getProcessID());
@@ -83,8 +83,8 @@ public class RRScheduler implements Scheduler {
     }
 
     @Override
-    public void onComplete(ProcessControlBlock pcb, int currentTime) {
-        pcb.setState(ProcessState.FINISHED);
+    public void onComplete(PCB pcb, int currentTime) {
+        pcb.setState(State.FINISHED);
         instructionsExecuted = 0;
         System.out.printf("[RR][t=%d] Process %d FINISHED.%n",
                 currentTime, pcb.getProcessID());
@@ -98,7 +98,7 @@ public class RRScheduler implements Scheduler {
         if (readyQueue.isEmpty()) {
             System.out.println("  │  (empty)");
         } else {
-            for (ProcessControlBlock pcb : readyQueue) {
+            for (PCB pcb : readyQueue) {
                 System.out.printf("  │  PID=%-2d  State=%-8s  PC=%d%n",
                         pcb.getProcessID(), pcb.getState(), pcb.getProgramCounter());
             }
@@ -112,8 +112,8 @@ public class RRScheduler implements Scheduler {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /** Move the running process to the back of the ready queue. */
-    private void preempt(ProcessControlBlock pcb, int currentTime) {
-        pcb.setState(ProcessState.READY);
+    private void preempt(PCB pcb, int currentTime) {
+        pcb.setState(State.READY);
         pcb.setLastReadyTime(currentTime);
         readyQueue.add(pcb);
         instructionsExecuted = 0;
@@ -125,7 +125,7 @@ public class RRScheduler implements Scheduler {
     public int  getQuantum()               { return quantum; }
     public void setQuantum(int quantum)    { this.quantum = quantum; }
 
-    public Queue<ProcessControlBlock> getReadyQueue() { return readyQueue; }
+    public Queue<PCB> getReadyQueue() { return readyQueue; }
 
     public boolean isEmpty() { return readyQueue.isEmpty(); }
 }

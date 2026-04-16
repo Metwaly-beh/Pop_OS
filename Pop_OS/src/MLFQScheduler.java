@@ -20,7 +20,7 @@ public class MLFQScheduler implements Scheduler {
 
     // One FIFO queue per priority level
     @SuppressWarnings("unchecked")
-    private final Queue<ProcessControlBlock>[] queues = new Queue[NUM_LEVELS];
+    private final Queue<PCB>[] queues = new Queue[NUM_LEVELS];
 
     // Quantum (in instructions) per level:  level i -> 2^i
     private final int[] quanta = new int[NUM_LEVELS];
@@ -43,11 +43,11 @@ public class MLFQScheduler implements Scheduler {
     // ── Scheduler interface ──────────────────────────────────────────────────
 
     @Override
-    public void addProcess(ProcessControlBlock pcb, int currentTime) {
+    public void addProcess(PCB pcb, int currentTime) {
         // New arrivals start at level 0; unblocked processes resume at their level
-        int level = (pcb.getState() == ProcessState.NEW) ? 0 : pcb.getMlfqLevel();
+        int level = (pcb.getState() == State.NEW) ? 0 : pcb.getMlfqLevel();
         pcb.setMlfqLevel(level);
-        pcb.setState(ProcessState.READY);
+        pcb.setState(State.READY);
         pcb.setLastReadyTime(currentTime);
         queues[level].add(pcb);
         System.out.printf("[MLFQ][t=%d] Process %d added to Queue[%d] (quantum=%d).%n",
@@ -55,14 +55,14 @@ public class MLFQScheduler implements Scheduler {
     }
 
     @Override
-    public ProcessControlBlock schedule(int currentTime) {
+    public PCB schedule(int currentTime) {
         // Find the highest-priority non-empty queue
         for (int level = 0; level < NUM_LEVELS; level++) {
             if (!queues[level].isEmpty()) {
                 instructionsExecuted = 0;
                 currentLevel = level;
-                ProcessControlBlock chosen = queues[level].poll();
-                chosen.setState(ProcessState.RUNNING);
+                PCB chosen = queues[level].poll();
+                chosen.setState(State.RUNNING);
                 System.out.printf(
                         "[MLFQ][t=%d] Scheduled Process %d from Queue[%d] (quantum=%d).%n",
                         currentTime, chosen.getProcessID(), level, quanta[level]);
@@ -79,7 +79,7 @@ public class MLFQScheduler implements Scheduler {
      * @return true if the quantum expired and the process must be preempted.
      */
     @Override
-    public boolean tick(ProcessControlBlock running, int currentTime) {
+    public boolean tick(PCB running, int currentTime) {
         if (running == null) return false;
 
         instructionsExecuted++;
@@ -95,8 +95,8 @@ public class MLFQScheduler implements Scheduler {
     }
 
     @Override
-    public void onBlock(ProcessControlBlock pcb, int currentTime) {
-        pcb.setState(ProcessState.BLOCKED);
+    public void onBlock(PCB pcb, int currentTime) {
+        pcb.setState(State.BLOCKED);
         instructionsExecuted = 0;
         System.out.printf("[MLFQ][t=%d] Process %d BLOCKED (was at Queue[%d]).%n",
                 currentTime, pcb.getProcessID(), pcb.getMlfqLevel());
@@ -104,8 +104,8 @@ public class MLFQScheduler implements Scheduler {
     }
 
     @Override
-    public void onComplete(ProcessControlBlock pcb, int currentTime) {
-        pcb.setState(ProcessState.FINISHED);
+    public void onComplete(PCB pcb, int currentTime) {
+        pcb.setState(State.FINISHED);
         instructionsExecuted = 0;
         System.out.printf("[MLFQ][t=%d] Process %d FINISHED (was at Queue[%d]).%n",
                 currentTime, pcb.getProcessID(), pcb.getMlfqLevel());
@@ -122,7 +122,7 @@ public class MLFQScheduler implements Scheduler {
             if (queues[i].isEmpty()) {
                 System.out.println("  │      (empty)");
             } else {
-                for (ProcessControlBlock pcb : queues[i]) {
+                for (PCB pcb : queues[i]) {
                     System.out.printf("  │      PID=%-2d  PC=%d/%d%n",
                             pcb.getProcessID(),
                             pcb.getProgramCounter(),
@@ -142,10 +142,10 @@ public class MLFQScheduler implements Scheduler {
      * Demote the process to the next lower queue (or keep it at the last
      * queue and re-enqueue in Round Robin fashion).
      */
-    private void demoteAndEnqueue(ProcessControlBlock pcb, int currentTime) {
+    private void demoteAndEnqueue(PCB pcb, int currentTime) {
         int nextLevel = Math.min(currentLevel + 1, NUM_LEVELS - 1);
         pcb.setMlfqLevel(nextLevel);
-        pcb.setState(ProcessState.READY);
+        pcb.setState(State.READY);
         pcb.setLastReadyTime(currentTime);
         queues[nextLevel].add(pcb);
         instructionsExecuted = 0;
@@ -156,7 +156,7 @@ public class MLFQScheduler implements Scheduler {
 
     // ── Accessors ─────────────────────────────────────────────────────────────
 
-    public Queue<ProcessControlBlock> getQueue(int level) {
+    public Queue<PCB> getQueue(int level) {
         if (level < 0 || level >= NUM_LEVELS)
             throw new IllegalArgumentException("Invalid MLFQ level: " + level);
         return queues[level];
@@ -165,7 +165,7 @@ public class MLFQScheduler implements Scheduler {
     public int getQuantum(int level) { return quanta[level]; }
 
     public boolean isEmpty() {
-        for (Queue<ProcessControlBlock> q : queues)
+        for (Queue<PCB> q : queues)
             if (!q.isEmpty()) return false;
         return true;
     }
