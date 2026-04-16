@@ -101,12 +101,15 @@ public class PCB {
         this.waitingTime = waitingTime;
     }
 
-    @Override
-    public String toString() {
-        return String.format(
-            "PCB[PID=%d | State=%-8s | PC=%d | Bounds=[%d-%d] | Arrival=%d | Burst=%d | Waiting=%d]",
-            getProcessID(), getState(), getProgramCounter(), getLowerBound(), getUpperBound(),
-            getArrivalTime(), getBurstTime(), getWaitingTime()
-        );
-    }
+   @Override
+public String toString() {
+    return "PCB[PID=" + getProcessID()
+        + " | State=" + getState()
+        + " | PC=" + getProgramCounter()
+        + " | Bounds=[" + getLowerBound() + "-" + getUpperBound() + "]"
+        + " | Arrival=" + getArrivalTime()
+        + " | Burst=" + getBurstTime()
+        + " | Waiting=" + getWaitingTime()
+        + "]";
+}
 }
