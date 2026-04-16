@@ -8,20 +8,20 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class GUI extends JFrame {
-    // Display components
+    
     private JLabel runningProcessLabel;
     private JLabel currentInstructionLabel;
     private JTextArea readyQueueArea;
-    private JTextArea blockedQueuesArea;  // Will show all blocked queues (per resource)
+    private JTextArea blockedQueuesArea;  
     private JTextArea memoryArea;
     private JTextArea diskLogArea;
 
-    // Control buttons
+    
     private JButton startButton;
     private JButton pauseButton;
     private JButton stepButton;
 
-    // Reference to simulator (for control)
+    
     private OSSimulator simulator;
 
     public GUI(OSSimulator sim) {
@@ -35,7 +35,7 @@ public class GUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
 
-        // --- Top Panel: Running Process Info ---
+       
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         runningProcessLabel = new JLabel("Running: None");
         runningProcessLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
@@ -46,10 +46,10 @@ public class GUI extends JFrame {
         topPanel.add(currentInstructionLabel);
         add(topPanel, BorderLayout.NORTH);
 
-        // --- Center Panel: Queues ---
+       
         JPanel queuesPanel = new JPanel(new GridLayout(1, 2, 10, 0));
 
-        // Ready Queue
+       
         JPanel readyPanel = new JPanel(new BorderLayout());
         readyPanel.setBorder(BorderFactory.createTitledBorder("Ready Queue"));
         readyQueueArea = new JTextArea();
@@ -59,7 +59,7 @@ public class GUI extends JFrame {
         readyPanel.add(readyScroll, BorderLayout.CENTER);
         queuesPanel.add(readyPanel);
 
-        // Blocked Queues (all resources + general)
+       
         JPanel blockedPanel = new JPanel(new BorderLayout());
         blockedPanel.setBorder(BorderFactory.createTitledBorder("Blocked Queues (UserInput | UserOutput | File | General)"));
         blockedQueuesArea = new JTextArea();
@@ -71,10 +71,10 @@ public class GUI extends JFrame {
 
         add(queuesPanel, BorderLayout.CENTER);
 
-        // --- Bottom Panel: Memory and Disk Log ---
+        
         JPanel bottomPanel = new JPanel(new GridLayout(1, 2, 10, 0));
 
-        // Memory display
+        
         JPanel memoryPanel = new JPanel(new BorderLayout());
         memoryPanel.setBorder(BorderFactory.createTitledBorder("Memory (40 words)"));
         memoryArea = new JTextArea();
@@ -84,7 +84,7 @@ public class GUI extends JFrame {
         memoryPanel.add(memoryScroll, BorderLayout.CENTER);
         bottomPanel.add(memoryPanel);
 
-        // Disk log
+       
         JPanel diskPanel = new JPanel(new BorderLayout());
         diskPanel.setBorder(BorderFactory.createTitledBorder("Disk Swap Log"));
         diskLogArea = new JTextArea();
@@ -96,12 +96,12 @@ public class GUI extends JFrame {
 
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // --- Control Buttons ---
+       
         JPanel controlPanel = new JPanel();
         startButton = new JButton("Start");
         pauseButton = new JButton("Pause");
         stepButton = new JButton("Step");
-        pauseButton.setEnabled(false); // Initially disabled
+        pauseButton.setEnabled(false); 
 
         startButton.addActionListener(e -> {
             simulator.startSimulation();
@@ -127,11 +127,7 @@ public class GUI extends JFrame {
         setVisible(true);
     }
 
-    // ========== Update Methods (called by simulator every clock cycle) ==========
-
-    /**
-     * Update the running process and current instruction display.
-     */
+   
     public void updateRunningProcess(int pid, String instruction) {
         SwingUtilities.invokeLater(() -> {
             runningProcessLabel.setText("Running: P" + (pid == -1 ? "None" : pid));
@@ -139,38 +135,23 @@ public class GUI extends JFrame {
         });
     }
 
-    /**
-     * Update the ready queue display.
-     * @param queueStr A formatted string of PIDs in ready queue (e.g., "P1 P2 P3")
-     */
+  
     public void updateReadyQueue(String queueStr) {
         SwingUtilities.invokeLater(() -> readyQueueArea.setText(queueStr));
     }
 
-    /**
-     * Update blocked queues display.
-     * @param blockedInfo A formatted string showing each semaphore's blocked queue
-     *                    and the general blocked queue.
-     */
     public void updateBlockedQueues(String blockedInfo) {
         SwingUtilities.invokeLater(() -> blockedQueuesArea.setText(blockedInfo));
     }
 
-    /**
-     * Update memory visualization.
-     * @param memoryDump A string representing the 40 memory words (e.g., array index and content).
-     */
     public void updateMemory(String memoryDump) {
         SwingUtilities.invokeLater(() -> memoryArea.setText(memoryDump));
     }
 
-    /**
-     * Append a message to the disk swap log.
-     */
     public void appendDiskLog(String message) {
         SwingUtilities.invokeLater(() -> {
             diskLogArea.append(message + "\n");
-            // Auto-scroll to bottom
+           
             diskLogArea.setCaretPosition(diskLogArea.getDocument().getLength());
         });
     }
