@@ -2,30 +2,19 @@ package com.osproject;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class GUI extends JFrame {
-    
     private JLabel runningProcessLabel;
     private JLabel currentInstructionLabel;
     private JTextArea readyQueueArea;
-    private JTextArea blockedQueuesArea;  
+    private JTextArea blockedQueuesArea;
     private JTextArea memoryArea;
     private JTextArea diskLogArea;
-
-    
     private JButton startButton;
     private JButton pauseButton;
     private JButton stepButton;
 
-    
-    private OSSimulator simulator;
-
-    public GUI(OSSimulator sim) {
-        this.simulator = sim;
+    public GUI() {
         initializeUI();
     }
 
@@ -35,7 +24,6 @@ public class GUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
 
-       
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         runningProcessLabel = new JLabel("Running: None");
         runningProcessLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
@@ -46,79 +34,42 @@ public class GUI extends JFrame {
         topPanel.add(currentInstructionLabel);
         add(topPanel, BorderLayout.NORTH);
 
-       
         JPanel queuesPanel = new JPanel(new GridLayout(1, 2, 10, 0));
-
-       
         JPanel readyPanel = new JPanel(new BorderLayout());
         readyPanel.setBorder(BorderFactory.createTitledBorder("Ready Queue"));
         readyQueueArea = new JTextArea();
         readyQueueArea.setEditable(false);
-        readyQueueArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        JScrollPane readyScroll = new JScrollPane(readyQueueArea);
-        readyPanel.add(readyScroll, BorderLayout.CENTER);
+        readyPanel.add(new JScrollPane(readyQueueArea), BorderLayout.CENTER);
         queuesPanel.add(readyPanel);
 
-       
         JPanel blockedPanel = new JPanel(new BorderLayout());
-        blockedPanel.setBorder(BorderFactory.createTitledBorder("Blocked Queues (UserInput | UserOutput | File | General)"));
+        blockedPanel.setBorder(BorderFactory.createTitledBorder("Blocked Queues"));
         blockedQueuesArea = new JTextArea();
         blockedQueuesArea.setEditable(false);
-        blockedQueuesArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        JScrollPane blockedScroll = new JScrollPane(blockedQueuesArea);
-        blockedPanel.add(blockedScroll, BorderLayout.CENTER);
+        blockedPanel.add(new JScrollPane(blockedQueuesArea), BorderLayout.CENTER);
         queuesPanel.add(blockedPanel);
-
         add(queuesPanel, BorderLayout.CENTER);
 
-        
         JPanel bottomPanel = new JPanel(new GridLayout(1, 2, 10, 0));
-
-        
         JPanel memoryPanel = new JPanel(new BorderLayout());
         memoryPanel.setBorder(BorderFactory.createTitledBorder("Memory (40 words)"));
         memoryArea = new JTextArea();
         memoryArea.setEditable(false);
-        memoryArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        JScrollPane memoryScroll = new JScrollPane(memoryArea);
-        memoryPanel.add(memoryScroll, BorderLayout.CENTER);
+        memoryPanel.add(new JScrollPane(memoryArea), BorderLayout.CENTER);
         bottomPanel.add(memoryPanel);
 
-       
         JPanel diskPanel = new JPanel(new BorderLayout());
         diskPanel.setBorder(BorderFactory.createTitledBorder("Disk Swap Log"));
         diskLogArea = new JTextArea();
         diskLogArea.setEditable(false);
-        diskLogArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        JScrollPane diskScroll = new JScrollPane(diskLogArea);
-        diskPanel.add(diskScroll, BorderLayout.CENTER);
+        diskPanel.add(new JScrollPane(diskLogArea), BorderLayout.CENTER);
         bottomPanel.add(diskPanel);
-
         add(bottomPanel, BorderLayout.SOUTH);
 
-       
         JPanel controlPanel = new JPanel();
         startButton = new JButton("Start");
         pauseButton = new JButton("Pause");
         stepButton = new JButton("Step");
-        pauseButton.setEnabled(false); 
-
-        startButton.addActionListener(e -> {
-            simulator.startSimulation();
-            startButton.setEnabled(false);
-            pauseButton.setEnabled(true);
-        });
-
-        pauseButton.addActionListener(e -> {
-            simulator.pauseSimulation();
-            startButton.setEnabled(true);
-            pauseButton.setEnabled(false);
-        });
-
-        stepButton.addActionListener(e -> {
-            simulator.stepExecution();
-        });
-
         controlPanel.add(startButton);
         controlPanel.add(pauseButton);
         controlPanel.add(stepButton);
@@ -127,7 +78,6 @@ public class GUI extends JFrame {
         setVisible(true);
     }
 
-   
     public void updateRunningProcess(int pid, String instruction) {
         SwingUtilities.invokeLater(() -> {
             runningProcessLabel.setText("Running: P" + (pid == -1 ? "None" : pid));
@@ -135,7 +85,6 @@ public class GUI extends JFrame {
         });
     }
 
-  
     public void updateReadyQueue(String queueStr) {
         SwingUtilities.invokeLater(() -> readyQueueArea.setText(queueStr));
     }
@@ -149,10 +98,6 @@ public class GUI extends JFrame {
     }
 
     public void appendDiskLog(String message) {
-        SwingUtilities.invokeLater(() -> {
-            diskLogArea.append(message + "\n");
-           
-            diskLogArea.setCaretPosition(diskLogArea.getDocument().getLength());
-        });
+        SwingUtilities.invokeLater(() -> diskLogArea.append(message + "\n"));
     }
 }
