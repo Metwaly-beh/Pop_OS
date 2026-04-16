@@ -1,17 +1,15 @@
 import java.util.List;
 
-
 public class Swap {
 
     private final Memory memory;
-    private final Disk   disk;
+    private final Disk disk;
 
     public Swap(Memory memory, Disk disk) {
         this.memory = memory;
-        this.disk   = disk;
+        this.disk = disk;
     }
 
-    
     public boolean freeSpaceFor(int requiredWords, List<PCB> allPCBs) {
         PCB vic = pickVic(allPCBs);
 
@@ -20,75 +18,71 @@ public class Swap {
             return false;
         }
 
-        System.out.println("[Swap] Evicting Process " + vic.processID
+        System.out.println("[Swap] Evicting Process " + vic.getProcessID()
                 + " to free " + requiredWords + " words.");
 
-        
-        List<String> snapshot = memory.swapOut(vic.processID);
-        disk.writeToDisk(vic.processID, snapshot);
+        List<String> snapshot = memory.swapOut(vic.getProcessID());
+        disk.writeToDisk(vic.getProcessID(), snapshot);
 
-        vic.lowerBound = -1;
-        vic.upperBound = -1;
+        vic.setLowerBound(-1);
+        vic.setUpperBound(-1);
 
-        System.out.println("[Swap] Process " + vic.processID + " swapped OUT.");
-        disk.displayDiskContents(vic.processID);
+        System.out.println("[Swap] Process " + vic.getProcessID() + " swapped OUT.");
+        disk.displayDiskContents(vic.getProcessID());
 
         return memory.getFreeWords() >= requiredWords;
     }
 
-    
     public boolean ensureLoaded(PCB pcb, List<PCB> allPCBs) {
-        if (memory.isLoaded(pcb.processID)) {
+        if (memory.isLoaded(pcb.getProcessID())) {
             return true;
         }
 
-        if (!disk.isOnDisk(pcb.processID)) {
-            System.err.println("[Swap] ERROR: Process " + pcb.processID
+        if (!disk.isOnDisk(pcb.getProcessID())) {
+            System.err.println("[Swap] ERROR: Process " + pcb.getProcessID()
                     + " is neither in memory nor on disk.");
             return false;
         }
 
-        System.out.println("[Swap] Process " + pcb.processID
+        System.out.println("[Swap] Process " + pcb.getProcessID()
                 + " needs to be swapped IN from disk.");
 
-        List<String> snapshot = disk.readFromDisk(pcb.processID);
+        List<String> snapshot = disk.readFromDisk(pcb.getProcessID());
         int required = snapshot.size();
 
         while (memory.getFreeWords() < required) {
             boolean freed = freeSpaceFor(required, allPCBs);
             if (!freed) {
                 System.out.println("[Swap] Could not free enough space to swap in Process "
-                        + pcb.processID);
+                        + pcb.getProcessID());
                 return false;
             }
         }
 
-        int newBase = memory.swapIn(pcb.processID, snapshot);
+        int newBase = memory.swapIn(pcb.getProcessID(), snapshot);
         if (newBase == -1) {
-            System.out.println("[Swap] swapIn failed for Process " + pcb.processID);
+            System.out.println("[Swap] swapIn failed for Process " + pcb.getProcessID());
             return false;
         }
 
-        pcb.lowerBound = memory.getLowerBound(pcb.processID);
-        pcb.upperBound = memory.getUpperBound(pcb.processID);
+        pcb.setLowerBound(memory.getLowerBound(pcb.getProcessID()));
+        pcb.setUpperBound(memory.getUpperBound(pcb.getProcessID()));
 
-        disk.deleteFromDisk(pcb.processID);
+        disk.deleteFromDisk(pcb.getProcessID());
 
-        System.out.println("[Swap] Process " + pcb.processID + " swapped IN successfully.");
+        System.out.println("[Swap] Process " + pcb.getProcessID() + " swapped IN successfully.");
         return true;
     }
 
- 
     private PCB pickVic(List<PCB> allPCBs) {
         PCB vic = null;
         int largestSize = -1;
 
         for (PCB pcb : allPCBs) {
-            // Only evict READY processes that are currently in memory
-            if (pcb.state != State.READY) continue;
-            if (!memory.isLoaded(pcb.processID)) continue;
+            if (pcb.getState() != State.READY) continue;
+            if (!memory.isLoaded(pcb.getProcessID())) continue;
 
-            int size = pcb.upperBound - pcb.lowerBound + 1;
+            int size = pcb.getUpperBound() - pcb.getLowerBound() + 1;
             if (size > largestSize) {
                 largestSize = size;
                 vic = pcb;
