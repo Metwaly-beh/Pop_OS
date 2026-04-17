@@ -15,7 +15,7 @@ public class Interpreter {
     public boolean executeNextInstruction(Process process, int currentTime) {
         int processID = process.getProcessID();
         // rest of method unchanged
-
+    
 
         int pc = memory.getProgramCounter(processID);
         String rawLine = memory.getInstruction(processID, pc);
