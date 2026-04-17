@@ -1,5 +1,3 @@
-package com.osproject;
-
 import javax.swing.*;
 import java.awt.*;
 

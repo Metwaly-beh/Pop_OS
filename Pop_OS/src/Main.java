@@ -1,47 +1,35 @@
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Main {
     static Memory memory = new Memory();
     static Disk disk = new Disk();
     static Swap swap = new Swap(memory, disk);
     static List<PCB> allProcesses = new ArrayList<>();
-    public static Semaphore userInputSem = new Semaphore("userInput");
-public static Semaphore userOutputSem = new Semaphore("userOutput");
-public static Semaphore fileSem = new Semaphore("file");
-public static GUI gui;
+    static Scheduler scheduler;
+    static Map<String, Semaphore> semaphores = new HashMap<>();
+    static GUI gui;
 
-
-public static Semaphore getSemaphore(String resourceName) {
-    switch (resourceName) {
-        case "userInput": return userInputSem;
-        case "userOutput": return userOutputSem;
-        case "file": return fileSem;
-        default: return null;
-    }
-}
-
-public static void addToGlobalBlockedQueue(Process p) {
-    SchedulerChooser.getCurrentScheduler().addToBlockedQueue(p);
-}
-
-public static void addToReadyQueue(Process p) {
-    SchedulerChooser.getCurrentScheduler().addToReadyQueue(p);
-}
-
-public static String getBlockedQueuesString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("UserInput: ").append(userInputSem.getBlockedQueue()).append("\n");
-    sb.append("UserOutput: ").append(userOutputSem.getBlockedQueue()).append("\n");
-    sb.append("File: ").append(fileSem.getBlockedQueue()).append("\n");
-    sb.append("General: ").append(SchedulerChooser.getCurrentScheduler().getGeneralBlockedQueue());
-    return sb.toString();
-}
-    
     public static void main(String[] args) {
         gui = new GUI();
-         }
 
+        scheduler = SchedulerChooser.create("RR");
 
-    
+        semaphores.put("userInput",  new Semaphore("userInput",  scheduler));
+        semaphores.put("userOutput", new Semaphore("userOutput", scheduler));
+        semaphores.put("file",       new Semaphore("file",       scheduler));
+
+        SystemCalls systemCalls = new SystemCalls(memory);
+        Interpreter interpreter = new Interpreter(memory, systemCalls, semaphores);
+    }
+
+    public static String getBlockedQueuesString() {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, Semaphore> entry : semaphores.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(entry.getValue().getBlockedQueue()).append("\n");
+        }
+        return sb.toString();
+    }
 }

@@ -1,16 +1,21 @@
+import java.util.Map;
+
 public class Interpreter {
 
     private final Memory       memory;
     private final SystemCalls  systemCalls;
-    private final MutexManager mutexManager;
+    private final Map<String, Semaphore> semaphores;
 
-    public Interpreter(Memory memory, SystemCalls systemCalls, MutexManager mutexManager) {
+    public Interpreter(Memory memory, SystemCalls systemCalls, Map<String, Semaphore> semaphores) {
         this.memory       = memory;
         this.systemCalls  = systemCalls;
-        this.mutexManager = mutexManager;
+        this.semaphores = semaphores;
     }
 
-    public boolean executeNextInstruction(int processID) {
+    public boolean executeNextInstruction(Process process, int currentTime) {
+        int processID = process.getProcessID();
+        // rest of method unchanged
+
 
         int pc = memory.getProgramCounter(processID);
         String rawLine = memory.getInstruction(processID, pc);
@@ -84,19 +89,26 @@ public class Interpreter {
 
             case "semwait": {
                 requireTokens(tokens, 2, rawLine);
-                String resource  = tokens[1];
-                boolean acquired = mutexManager.semWait(resource, processID);
+                String resource = tokens[1];
+                Semaphore sem = semaphores.get(resource);
+                if (sem == null) throw new RuntimeException("[Interpreter] Unknown resource: " + resource);
+                boolean acquired = sem.semWait(process, currentTime);
                 if (!acquired) {
                     memory.setState(processID, "BLOCKED");
-                    System.out.println("[Process " + processID + "] BLOCKED waiting for: " + resource);
+                    process.getPCB().setState(State.BLOCKED);
                     return false;
                 }
                 break;
             }
 
+
+
             case "semsignal": {
                 requireTokens(tokens, 2, rawLine);
-                mutexManager.semSignal(tokens[1], processID);
+                String resource = tokens[1];
+                Semaphore sem = semaphores.get(resource);
+                if (sem == null) throw new RuntimeException("[Interpreter] Unknown resource: " + resource);
+                sem.semSignal(process, currentTime);
                 break;
             }
 

@@ -9,7 +9,7 @@ public class Disk {
     private static final String SWAP_SUFFIX = ".swap";
 
     public Disk() {
-        File dir = new File(SWAP_DIR);
+        new File(SWAP_DIR).mkdirs();
     }
 
    
