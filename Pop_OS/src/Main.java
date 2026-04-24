@@ -26,7 +26,7 @@ public class Main {
     public static void main(String[] args) {
         gui = new GUI();
 
-        scheduler = SchedulerChooser.create("RR");
+        scheduler = SchedulerChooser.create("MLFQ");
 
         semaphores.put("userInput",  new Semaphore("userInput",  scheduler));
         semaphores.put("userOutput", new Semaphore("userOutput", scheduler));
@@ -206,6 +206,7 @@ public class Main {
         List<String> lines = new ArrayList<>();
 
         File f = new File(fileName);
+        System.out.println("[OS] Looking for file: " + f.getAbsolutePath());
         if (f.exists()) {
             try (BufferedReader br = new BufferedReader(new FileReader(f))) {
                 String line;
@@ -251,6 +252,7 @@ public class Main {
     }
 
     static boolean allDone() {
+        if (clock <= ARRIVAL_TIMES[ARRIVAL_TIMES.length - 1]) return false;
         if (allPCBs.isEmpty()) return false;
         for (PCB pcb : allPCBs) {
             if (pcb.getState() != State.FINISHED) return false;
