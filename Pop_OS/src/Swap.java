@@ -1,5 +1,6 @@
 import java.util.List;
 
+
 public class Swap {
 
     private final Memory memory;
@@ -10,6 +11,7 @@ public class Swap {
         this.disk = disk;
     }
 
+    
     public boolean freeSpaceFor(int requiredWords, List<PCB> allPCBs) {
         PCB vic = pickVic(allPCBs);
 
@@ -24,6 +26,7 @@ public class Swap {
         List<String> snapshot = memory.swapOut(vic.getProcessID());
         disk.writeToDisk(vic.getProcessID(), snapshot);
 
+        // mark bounds as invalid since process is no longer in memory
         vic.setLowerBound(-1);
         vic.setUpperBound(-1);
 
@@ -33,9 +36,10 @@ public class Swap {
         return memory.getFreeWords() >= requiredWords;
     }
 
+    
     public boolean ensureLoaded(PCB pcb, List<PCB> allPCBs) {
         if (memory.isLoaded(pcb.getProcessID())) {
-            return true;
+            return true;  
         }
 
         if (!disk.isOnDisk(pcb.getProcessID())) {
@@ -50,6 +54,7 @@ public class Swap {
         List<String> snapshot = disk.readFromDisk(pcb.getProcessID());
         int required = snapshot.size();
 
+        
         while (memory.getFreeWords() < required) {
             boolean freed = freeSpaceFor(required, allPCBs);
             if (!freed) {
@@ -65,21 +70,24 @@ public class Swap {
             return false;
         }
 
+        
         pcb.setLowerBound(memory.getLowerBound(pcb.getProcessID()));
         pcb.setUpperBound(memory.getUpperBound(pcb.getProcessID()));
 
+       
         disk.deleteFromDisk(pcb.getProcessID());
 
         System.out.println("[Swap] Process " + pcb.getProcessID() + " swapped IN successfully.");
         return true;
     }
 
+    // picks the victim process to evict
     private PCB pickVic(List<PCB> allPCBs) {
         PCB vic = null;
         int largestSize = -1;
 
         for (PCB pcb : allPCBs) {
-            if (pcb.getState() != State.READY) continue;
+            if (pcb.getState() != State.READY && pcb.getState() != State.BLOCKED) continue;
             if (!memory.isLoaded(pcb.getProcessID())) continue;
 
             int size = pcb.getUpperBound() - pcb.getLowerBound() + 1;
