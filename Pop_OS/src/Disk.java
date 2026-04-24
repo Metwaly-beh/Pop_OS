@@ -5,14 +5,16 @@ import java.util.List;
 
 public class Disk {
 
+    //store the swap files
     private static final String SWAP_DIR    = "./swap/";
     private static final String SWAP_SUFFIX = ".swap";
 
     public Disk() {
+        // make the swap folder
         new File(SWAP_DIR).mkdirs();
     }
 
-   
+    // saves the process snapshot to a file
     public void writeToDisk(int processID, List<String> snapshot) {
         String path = getPath(processID);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
@@ -28,13 +30,14 @@ public class Disk {
         }
     }
 
-    
+    // reads back the process snapshot
     public List<String> readFromDisk(int processID) {
         String path = getPath(processID);
         List<String> snapshot = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
             String line;
             while ((line = reader.readLine()) != null) {
+               
                 if (!line.trim().isEmpty()) {
                     snapshot.add(line);
                 }
@@ -60,7 +63,7 @@ public class Disk {
         }
     }
 
-    
+    // checks if a process has been swapped 
     public boolean isOnDisk(int processID) {
         return new File(getPath(processID)).exists();
     }
