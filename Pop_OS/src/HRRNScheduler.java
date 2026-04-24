@@ -2,17 +2,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Highest Response Ratio Next (HRRN) Scheduler — non-preemptive.
- *
- * At every scheduling decision the process with the highest response ratio
- * is selected:
- *      RR = (Waiting Time + Burst Time) / Burst Time
- *
- * Because HRRN is non-preemptive, tick() always returns false (no forced
- * preemption). A new scheduling decision only happens when the running
- * process finishes or blocks.
- */
+
 public class HRRNScheduler implements Scheduler {
 
     private final List<PCB> readyQueue;
@@ -20,8 +10,6 @@ public class HRRNScheduler implements Scheduler {
     public HRRNScheduler() {
         readyQueue = new ArrayList<>();
     }
-
-    // ── Scheduler interface ──────────────────────────────────────────────────
 
     @Override
     public void addProcess(PCB pcb, int currentTime) {
@@ -36,12 +24,12 @@ public class HRRNScheduler implements Scheduler {
     public PCB schedule(int currentTime) {
         if (readyQueue.isEmpty()) return null;
 
-        // Update waiting times for all ready processes before comparing ratios
+        // update waiting times 
         for (PCB pcb : readyQueue) {
             pcb.accumulateWaiting(currentTime);
         }
 
-        // Pick the process with the highest response ratio
+        // find the process with the highest response ratio
         PCB chosen = readyQueue.stream()
                 .max(Comparator.comparingDouble(PCB::getResponseRatio))
                 .orElse(null);
@@ -57,13 +45,10 @@ public class HRRNScheduler implements Scheduler {
         return chosen;
     }
 
-    /** HRRN is non-preemptive — never forces a preemption. */
+   
     @Override
     public boolean tick(PCB running, int currentTime) {
-        // Still accumulate waiting time for queued processes every tick
-        for (PCB pcb : readyQueue) {
-            // We accumulate lazily in schedule(); nothing extra needed here.
-        }
+        
         return false;
     }
 
@@ -83,6 +68,7 @@ public class HRRNScheduler implements Scheduler {
         printQueues();
     }
 
+    // prints the ready queue 
     @Override
     public void printQueues() {
         System.out.println("  ┌─ HRRN Ready Queue (" + readyQueue.size() + " process(es)) ─────────────");
@@ -100,8 +86,6 @@ public class HRRNScheduler implements Scheduler {
 
     @Override
     public String getName() { return "HRRN"; }
-
-    // ── Accessors ─────────────────────────────────────────────────────────────
 
     public List<PCB> getReadyQueue() {
         return readyQueue;
