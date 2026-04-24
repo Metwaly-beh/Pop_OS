@@ -1,16 +1,17 @@
+
 public class PCB {
 
     private int processID;
     private State state;
     private int programCounter;
-    private int lowerBound;
-    private int upperBound;
+    private int lowerBound;   
+    private int upperBound;   
     private int arrivalTime;
-    private int burstTime;
+    private int burstTime;    
     private int waitingTime;
-    private int mlfqLevel = 0;
-    private int lastReadyTime = 0;
-    private int totalInstructions;
+    private int mlfqLevel = 0;        
+    private int lastReadyTime = 0;    
+    private int totalInstructions;    
 
     public PCB(int processID, int arrivalTime, int burstTime, int totalInstructions) {
         this.processID = processID;
@@ -25,6 +26,7 @@ public class PCB {
         this.lastReadyTime = arrivalTime;
     }
 
+     
     public void syncFromMemory(Memory memory) {
         this.state = State.valueOf(memory.getState(getProcessID()));
         this.programCounter = memory.getProgramCounter(getProcessID());
@@ -32,18 +34,20 @@ public class PCB {
         this.upperBound = memory.getUpperBound(getProcessID());
     }
 
+    
     public void syncToMemory(Memory memory) {
         memory.setState(getProcessID(), getState().name());
         memory.setProgramCounter(getProcessID(), getProgramCounter());
     }
 
+   
+    // higher ratio = higher priority
     public double getResponseRatio() {
         if (getBurstTime() == 0) return Double.MAX_VALUE;
         return (double)(getWaitingTime() + getBurstTime()) / getBurstTime();
     }
 
-
-
+    // adds how long we've been waiting since ready
     public void accumulateWaiting(int currentTime) {
         if (state == State.READY && currentTime > lastReadyTime) {
             waitingTime += (currentTime - lastReadyTime);
@@ -127,16 +131,15 @@ public class PCB {
 
     public void setTotalInstructions(int n) { this.totalInstructions = n; }
 
-
     @Override
-public String toString() {
-    return "PCB[PID=" + getProcessID()
-        + " | State=" + getState()
-        + " | PC=" + getProgramCounter()
-        + " | Bounds=[" + getLowerBound() + "-" + getUpperBound() + "]"
-        + " | Arrival=" + getArrivalTime()
-        + " | Burst=" + getBurstTime()
-        + " | Waiting=" + getWaitingTime()
-        + "]";
-}
+    public String toString() {
+        return "PCB[PID=" + getProcessID()
+            + " | State=" + getState()
+            + " | PC=" + getProgramCounter()
+            + " | Bounds=[" + getLowerBound() + "-" + getUpperBound() + "]"
+            + " | Arrival=" + getArrivalTime()
+            + " | Burst=" + getBurstTime()
+            + " | Waiting=" + getWaitingTime()
+            + "]";
+    }
 }
