@@ -3,28 +3,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// Memory class - simulates a flat array of 40 words
-// each process gets a fixed-size block with a PCB section, variable slots, and instruction space
 public class Memory {
 
     public static int TOTAL_SIZE = 40;
 
-    // offsets within the PCB section for each field
     public static int PCB_PROCESS_ID     = 0;
     public static int PCB_STATE          = 1;
     public static int PCB_PROGRAM_COUNTER= 2;
     public static int PCB_LOWER_BOUND    = 3;
     public static int PCB_UPPER_BOUND    = 4;
 
-    // PCB takes 5 words, then 3 variables * 2 words each = 6 words
     public static int PCB_SIZE           = 5;
     public static int MAX_VARIABLES      = 3;
     public static int VARIABLE_SPACE     = MAX_VARIABLES * 2;
     public static int FIXED_OVERHEAD     = PCB_SIZE + VARIABLE_SPACE; // = 11
 
-    // the actual memory array
     private final String[] memory;
-    // maps processID -> base address in memory
     private final Map<Integer, Integer> processBaseMap;
 
     public Memory() {
@@ -32,7 +26,7 @@ public class Memory {
         processBaseMap = new HashMap<>();
     }
 
-    // allocates a contiguous block for a process and fills in its PCB + instructions
+    // finds a block for the process
     public int allocate(int processID, List<String> instructions) {
         int required = FIXED_OVERHEAD + instructions.size();
         int base = findFreeBlock(required);
@@ -45,20 +39,17 @@ public class Memory {
 
         processBaseMap.put(processID, base);
 
-        // fill in PCB fields
         memory[base + PCB_PROCESS_ID]      = "PID:"   + processID;
         memory[base + PCB_STATE]           = "STATE:READY";
         memory[base + PCB_PROGRAM_COUNTER] = "PC:0";
         memory[base + PCB_LOWER_BOUND]     = "LB:"    + base;
         memory[base + PCB_UPPER_BOUND]     = "UB:"    + (base + required - 1);
 
-        // initialize variable slots to null
         for (int i = 0; i < MAX_VARIABLES; i++) {
             memory[base + PCB_SIZE + i * 2]     = "VAR" + (i + 1) + "_KEY:null";
             memory[base + PCB_SIZE + i * 2 + 1] = "VAR" + (i + 1) + "_VAL:null";
         }
 
-        // store the instructions right after the overhead section
         int instrBase = base + FIXED_OVERHEAD;
         for (int i = 0; i < instructions.size(); i++) {
             memory[instrBase + i] = "INSTR:" + instructions.get(i);
@@ -106,8 +97,7 @@ public class Memory {
         return Integer.parseInt(readField(getBase(processID) + PCB_UPPER_BOUND, "UB:"));
     }
 
-    // stores a variable by key in one of the 3 variable slots
-    // updates the value if the key already exists, otherwise finds an empty slot
+    // stores a variable in one of the 3 variable slots
     public void setVariable(int processID, String key, String value) {
         int base = getBase(processID);
         int varBase = base + PCB_SIZE;
@@ -122,7 +112,6 @@ public class Memory {
             }
         }
 
-        // find a free slot
         for (int i = 0; i < MAX_VARIABLES; i++) {
             String storedKey = readField(varBase + i * 2, "VAR" + (i + 1) + "_KEY:");
             if (storedKey.equals("null")) {
@@ -134,12 +123,11 @@ public class Memory {
             }
         }
 
-        // all 3 slots are taken
+        // no open slots
         throw new IllegalArgumentException(
                 "[Memory] Process " + processID + " has no free variable slots.");
     }
 
-    // looks up a variable by key, returns null if not found
     public String getVariable(int processID, String key) {
         int base = getBase(processID);
         int varBase = base + PCB_SIZE;
@@ -153,7 +141,6 @@ public class Memory {
         return null;
     }
 
-    // returns the instruction at the given index (0-based) for the process
     public String getInstruction(int processID, int index) {
         int base = getBase(processID);
         int instrAddr = base + FIXED_OVERHEAD + index;
@@ -163,7 +150,6 @@ public class Memory {
         return word.substring(6);
     }
 
-    // counts how many instructions are stored for the process
     public int getInstructionCount(int processID) {
         int base  = getBase(processID);
         int upper = getUpperBound(processID);
@@ -174,21 +160,19 @@ public class Memory {
         return count;
     }
 
-    // low-level write with bounds check
     public void write(int processID, int offset, String value) {
         int addr = getBase(processID) + offset;
         guardBounds(processID, addr);
         memory[addr] = value;
     }
 
-    // low-level read with bounds check
     public String read(int processID, int offset) {
         int addr = getBase(processID) + offset;
         guardBounds(processID, addr);
         return memory[addr];
     }
 
-    // takes a snapshot of the process's memory and removes it (for swapping out)
+    // remove a snapshot from memory
     public List<String> swapOut(int processID) {
         int base  = getBase(processID);
         int upper = getUpperBound(processID);
@@ -203,8 +187,7 @@ public class Memory {
         return snapshot;
     }
 
-    // restores a process from a snapshot (for swapping in)
-    // may place it at a different base address if memory layout changed
+    // restores a process
     public int swapIn(int processID, List<String> snapshot) {
         int size = snapshot.size();
         int base = findFreeBlock(size);
@@ -228,7 +211,6 @@ public class Memory {
         }
 
         processBaseMap.put(processID, base);
-        // update LB and UB to reflect new location
         memory[base + PCB_LOWER_BOUND] = "LB:" + base;
         memory[base + PCB_UPPER_BOUND] = "UB:" + (base + size - 1);
 
@@ -237,7 +219,6 @@ public class Memory {
         return base;
     }
 
-    // returns the base address for a process, throws if not loaded
     private int getBase(int processID) {
         Integer base = processBaseMap.get(processID);
         if (base == null)
@@ -246,7 +227,6 @@ public class Memory {
         return base;
     }
 
-    // finds the first contiguous free block of the required size
     private int findFreeBlock(int size) {
         int count = 0;
         int start = -1;
@@ -263,14 +243,13 @@ public class Memory {
         return -1;
     }
 
-    // strips the prefix from a memory word (e.g. "PC:5" -> "5")
+    // removes prefix from a word
     private String readField(int addr, String prefix) {
         String word = memory[addr];
         if (word == null) return "null";
         return word.startsWith(prefix) ? word.substring(prefix.length()) : word;
     }
 
-    // throws SecurityException if the address is outside the process's allocated range
     private void guardBounds(int processID, int addr) {
         int base  = getBase(processID);
         int upper = Integer.parseInt(readField(base + PCB_UPPER_BOUND, "UB:"));
@@ -281,12 +260,10 @@ public class Memory {
         }
     }
 
-    // returns true if the process is currently in memory
     public boolean isLoaded(int processID) {
         return processBaseMap.containsKey(processID);
     }
 
-    // counts how many words are currently free
     public int getFreeWords() {
         int count = 0;
         for (String word : memory) if (word == null) count++;
