@@ -1,33 +1,22 @@
 import java.util.LinkedList;
 import java.util.Queue;
 
-/**
- * Round Robin (RR) Scheduler — preemptive.
- *
- * Each process receives a fixed quantum of instructions (default = 2, but
- * configurable as required by the spec: "Time slice is subject to change").
- *
- * When a process uses its full quantum it is moved to the back of the ready
- * queue and the next process is scheduled.
- */
+
 public class RRScheduler implements Scheduler {
 
     private final Queue<PCB> readyQueue;
-    private int quantum;               // instructions per time slice
-    private int instructionsExecuted;  // instructions run in the current slice
-
+    private int quantum;              
+    private int instructionsExecuted;  
     public RRScheduler(int quantum) {
         this.readyQueue           = new LinkedList<>();
         this.quantum              = quantum;
         this.instructionsExecuted = 0;
     }
 
-    /** Convenience constructor using the spec default of 2. */
+    //  quantum=2
     public RRScheduler() {
         this(2);
     }
-
-    // ── Scheduler interface ──────────────────────────────────────────────────
 
     @Override
     public void addProcess(PCB pcb, int currentTime) {
@@ -42,7 +31,8 @@ public class RRScheduler implements Scheduler {
     public PCB schedule(int currentTime) {
         if (readyQueue.isEmpty()) return null;
 
-        instructionsExecuted = 0;     // reset slice counter for the new process
+        // reset the instruction counter for the new process
+        instructionsExecuted = 0;
         PCB chosen = readyQueue.poll();
         chosen.setState(State.RUNNING);
         System.out.printf("[RR][t=%d] Scheduled Process %d  (quantum=%d)%n",
@@ -51,12 +41,7 @@ public class RRScheduler implements Scheduler {
         return chosen;
     }
 
-    /**
-     * Called after every instruction executed by the running process.
-     *
-     * @return true if the quantum has expired and the process should be
-     *         preempted (put back at the end of the ready queue).
-     */
+    //checks if the quantum is expired
     @Override
     public boolean tick(PCB running, int currentTime) {
         if (running == null) return false;
@@ -64,7 +49,6 @@ public class RRScheduler implements Scheduler {
         instructionsExecuted++;
 
         if (instructionsExecuted >= quantum) {
-            // Quantum expired — preempt
             System.out.printf("[RR][t=%d] Process %d quantum expired (%d instructions).%n",
                     currentTime, running.getProcessID(), quantum);
             preempt(running, currentTime);
@@ -109,9 +93,7 @@ public class RRScheduler implements Scheduler {
     @Override
     public String getName() { return "RR"; }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    /** Move the running process to the back of the ready queue. */
+    // puts the process at the back of the queue
     private void preempt(PCB pcb, int currentTime) {
         pcb.setState(State.READY);
         pcb.setLastReadyTime(currentTime);
@@ -119,8 +101,6 @@ public class RRScheduler implements Scheduler {
         instructionsExecuted = 0;
         printQueues();
     }
-
-    // ── Accessors ─────────────────────────────────────────────────────────────
 
     public int  getQuantum()               { return quantum; }
     public void setQuantum(int quantum)    { this.quantum = quantum; }
