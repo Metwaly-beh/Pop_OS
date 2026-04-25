@@ -26,7 +26,7 @@ public class Main {
     public static void main(String[] args) {
         gui = new GUI();
 
-        scheduler = SchedulerChooser.create("MLFQ");
+        scheduler = SchedulerChooser.create("RR",2);
 
         semaphores.put("userInput",  new Semaphore("userInput",  scheduler));
         semaphores.put("userOutput", new Semaphore("userOutput", scheduler));
@@ -176,15 +176,15 @@ public class Main {
         PCB pcb = new PCB(pid, clock, burstTime, burstTime);
 
         int required = Memory.FIXED_OVERHEAD + instructions.size();
-
+        int base = memory.allocate(pid, instructions);
         int attempts = 0;
-        while (memory.getFreeWords() < required && attempts < 5) {
+        while (base == -1 && attempts < allPCBs.size()) {
             boolean freed = swap.freeSpaceFor(required, allPCBs);
             if (!freed) break;
+            base = memory.allocate(pid, instructions);
             attempts++;
         }
 
-        int base = memory.allocate(pid, instructions);
         if (base == -1) {
             System.out.println("[OS] Cannot create Process " + pid + ": not enough memory.");
             return;
