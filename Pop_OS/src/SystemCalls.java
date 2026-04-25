@@ -1,28 +1,23 @@
 import java.io.*;
-import java.util.Scanner;
-
 
 public class SystemCalls {
 
-    private final Memory  memory;
-    private final Scanner userInputScanner;  
+    private final Memory memory;
 
     public SystemCalls(Memory memory) {
-        this.memory           = memory;
-        this.userInputScanner = new Scanner(System.in);
+        this.memory = memory;
     }
 
-   
     public void print(int processID, String value) {
         System.out.println("[Process " + processID + " OUTPUT]: " + value);
     }
 
-   
     public void assign(int processID, String varName, String valueOrKeyword) {
         String actualValue;
         if (valueOrKeyword.equalsIgnoreCase("input")) {
-            System.out.print("[Process " + processID + "]: Please enter a value: ");
-            actualValue = userInputScanner.nextLine().trim();
+            System.out.println("[Process " + processID + "]: Please enter a value for '" + varName + "':");
+            actualValue = GUI.promptUserInput(
+                    "Process " + processID + " requests input for variable '" + varName + "':");
         } else {
             actualValue = valueOrKeyword;
         }
@@ -30,7 +25,6 @@ public class SystemCalls {
         System.out.println("[Process " + processID + "]: assign " + varName + " = " + actualValue);
     }
 
-    
     public void writeFile(int processID, String fileName, String data) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, false))) {
             writer.write(data);
@@ -40,7 +34,6 @@ public class SystemCalls {
         }
     }
 
-    
     public String readFile(int processID, String fileName) {
         StringBuilder content = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
@@ -56,13 +49,12 @@ public class SystemCalls {
         return content.toString().trim();
     }
 
-  
     public void printFromTo(int processID, int from, int to) {
-        System.out.print("[Process " + processID + " OUTPUT]: ");
+        StringBuilder sb = new StringBuilder();
         for (int i = from; i <= to; i++) {
-            System.out.print(i);
-            if (i < to) System.out.print(", ");
+            sb.append(i);
+            if (i < to) sb.append(", ");
         }
-        System.out.println();
+        System.out.println("[Process " + processID + " OUTPUT]: " + sb);
     }
 }

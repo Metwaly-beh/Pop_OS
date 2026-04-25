@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 public class GUI extends JFrame {
 
@@ -10,6 +12,8 @@ public class GUI extends JFrame {
     private JTextArea blockedQueuesArea;
     private JTextArea memoryArea;
     private JTextArea diskLogArea;
+    private JTextArea terminalArea;
+    private JTextArea processOutputArea;
     private JButton startButton;
     private JButton pauseButton;
     private JButton stepButton;
@@ -20,15 +24,16 @@ public class GUI extends JFrame {
 
     public GUI() {
         initializeUI();
+        redirectSystemStreams();
     }
 
-    // builds and wiresvthe panels/buttons
     private void initializeUI() {
         setTitle("CSEN 602 OS Simulator - Spring 2026");
-        setSize(1100, 750);
+        setSize(1400, 900);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout(6, 6));
 
+        // ── Top bar ───────────────────────────────────────────────────────────
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         clockLabel = new JLabel("Clock: 0");
         clockLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
@@ -43,7 +48,8 @@ public class GUI extends JFrame {
         topPanel.add(currentInstructionLabel);
         add(topPanel, BorderLayout.NORTH);
 
-        JPanel queuesPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        // ── Centre: ready queue | blocked queues | process output ─────────────
+        JPanel queuesPanel = new JPanel(new GridLayout(1, 3, 6, 0));
 
         JPanel readyPanel = new JPanel(new BorderLayout());
         readyPanel.setBorder(BorderFactory.createTitledBorder("Ready Queue"));
@@ -61,9 +67,21 @@ public class GUI extends JFrame {
         blockedPanel.add(new JScrollPane(blockedQueuesArea), BorderLayout.CENTER);
         queuesPanel.add(blockedPanel);
 
+        // dedicated panel — only OUTPUT lines and input prompts appear here
+        JPanel outputPanel = new JPanel(new BorderLayout());
+        outputPanel.setBorder(BorderFactory.createTitledBorder("Process Output"));
+        processOutputArea = new JTextArea();
+        processOutputArea.setEditable(false);
+        processOutputArea.setFont(new Font("Monospaced", Font.BOLD, 13));
+        processOutputArea.setBackground(new Color(0, 30, 50));
+        processOutputArea.setForeground(new Color(100, 220, 255));
+        outputPanel.add(new JScrollPane(processOutputArea), BorderLayout.CENTER);
+        queuesPanel.add(outputPanel);
+
         add(queuesPanel, BorderLayout.CENTER);
 
-        JPanel bottomPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        // ── Bottom: memory | disk log | terminal log ──────────────────────────
+        JPanel bottomPanel = new JPanel(new GridLayout(1, 3, 6, 0));
 
         JPanel memoryPanel = new JPanel(new BorderLayout());
         memoryPanel.setBorder(BorderFactory.createTitledBorder("Memory (40 words)"));
@@ -81,14 +99,25 @@ public class GUI extends JFrame {
         diskPanel.add(new JScrollPane(diskLogArea), BorderLayout.CENTER);
         bottomPanel.add(diskPanel);
 
+        JPanel terminalPanel = new JPanel(new BorderLayout());
+        terminalPanel.setBorder(BorderFactory.createTitledBorder("Terminal Log"));
+        terminalArea = new JTextArea();
+        terminalArea.setEditable(false);
+        terminalArea.setFont(new Font("Monospaced", Font.PLAIN, 11));
+        terminalArea.setBackground(new Color(20, 20, 20));
+        terminalArea.setForeground(new Color(180, 255, 180));
+        terminalArea.setCaretColor(Color.GREEN);
+        terminalPanel.add(new JScrollPane(terminalArea), BorderLayout.CENTER);
+        bottomPanel.add(terminalPanel);
+
         add(bottomPanel, BorderLayout.SOUTH);
 
+        // ── Control buttons ───────────────────────────────────────────────────
         JPanel controlPanel = new JPanel();
         startButton = new JButton("▶ Start");
         pauseButton = new JButton("⏸ Pause");
         stepButton  = new JButton("⏭ Step");
 
-        // pause is disabled at start
         pauseButton.setEnabled(false);
         stepButton.setEnabled(true);
 
@@ -118,6 +147,66 @@ public class GUI extends JFrame {
         setVisible(true);
     }
 
+    // ── Stream redirect ───────────────────────────────────────────────────────
+    // Every System.out/err line goes to the terminal log.
+    // Lines containing "OUTPUT]:" or "Please enter" also go to the output panel.
+    private void redirectSystemStreams() {
+        OutputStream out = new OutputStream() {
+            private final StringBuilder buffer = new StringBuilder();
+
+            @Override
+            public void write(int b) {
+                buffer.append((char) b);
+                if ((char) b == '\n') flush();
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) {
+                buffer.append(new String(b, off, len, StandardCharsets.UTF_8));
+                if (buffer.indexOf("\n") >= 0) flush();
+            }
+
+            @Override
+            public void flush() {
+                final String text = buffer.toString();
+                buffer.setLength(0);
+                if (text.isEmpty()) return;
+                SwingUtilities.invokeLater(() -> {
+                    terminalArea.append(text);
+                    terminalArea.setCaretPosition(terminalArea.getDocument().getLength());
+
+                    if (text.contains("OUTPUT]:") || text.contains("Please enter")) {
+                        processOutputArea.append(text);
+                        processOutputArea.setCaretPosition(
+                                processOutputArea.getDocument().getLength());
+                    }
+                });
+            }
+        };
+
+        System.setOut(new PrintStream(out, true, StandardCharsets.UTF_8));
+        System.setErr(new PrintStream(out, true, StandardCharsets.UTF_8));
+    }
+
+    // ── Input dialog (replaces Scanner in SystemCalls) ────────────────────────
+    public static String promptUserInput(String prompt) {
+        final String[] result = {""};
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                String input = JOptionPane.showInputDialog(
+                        null, prompt,
+                        "Process Input Required",
+                        JOptionPane.QUESTION_MESSAGE);
+                result[0] = (input != null) ? input.trim() : "";
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result[0];
+    }
+
+    // ── Public update methods called from Main ────────────────────────────────
+
     public void setOnStart(Runnable r) { this.onStart = r; }
     public void setOnPause(Runnable r) { this.onPause = r; }
     public void setOnStep(Runnable r)  { this.onStep  = r; }
@@ -145,19 +234,18 @@ public class GUI extends JFrame {
         SwingUtilities.invokeLater(() -> memoryArea.setText(memoryDump));
     }
 
-    // append a message to the disk log
     public void appendDiskLog(String message) {
         SwingUtilities.invokeLater(() -> diskLogArea.append(message + "\n"));
     }
 
-    // disables all buttons
     public void onSimulationComplete() {
         SwingUtilities.invokeLater(() -> {
             startButton.setEnabled(false);
             pauseButton.setEnabled(false);
             stepButton.setEnabled(false);
             runningProcessLabel.setText("Running: None");
-            currentInstructionLabel.setText("Instruction: Simulation Complete");
+            currentInstructionLabel.setText("Instruction: Simulation Complete ✓");
+            processOutputArea.append("\n── Simulation Complete ──\n");
         });
     }
 }
